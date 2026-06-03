@@ -167,10 +167,7 @@ impl NotificationService {
     }
 
     /// Mark notification as delivered.
-    pub async fn mark_delivered(
-        db: &PgPool,
-        notif_id: Uuid,
-    ) -> Result<(), ApiError> {
+    pub async fn mark_delivered(db: &PgPool, notif_id: Uuid) -> Result<(), ApiError> {
         sqlx::query(
             r#"
             UPDATE notifications
@@ -186,10 +183,7 @@ impl NotificationService {
     }
 
     /// Increment delivery attempts for a notification.
-    pub async fn increment_delivery_attempts(
-        db: &PgPool,
-        notif_id: Uuid,
-    ) -> Result<(), ApiError> {
+    pub async fn increment_delivery_attempts(db: &PgPool, notif_id: Uuid) -> Result<(), ApiError> {
         sqlx::query(
             r#"
             UPDATE notifications
@@ -209,10 +203,7 @@ impl NotificationService {
     }
 
     /// Fetch undelivered notifications for retry.
-    pub async fn list_undelivered(
-        db: &PgPool,
-        limit: i64,
-    ) -> Result<Vec<Notification>, ApiError> {
+    pub async fn list_undelivered(db: &PgPool, limit: i64) -> Result<Vec<Notification>, ApiError> {
         let rows = sqlx::query_as::<_, Notification>(
             r#"
             SELECT id, user_id, type, message, is_read, delivery_status, delivery_attempts, created_at

@@ -295,7 +295,6 @@ pub async fn revoke_session(
     Ok(Json(json!({ "message": "Session revoked" })))
 }
 
-
 // ── Middleware ────────────────────────────────────────────────────────────────
 
 /// Rejects requests whose JWT has been explicitly revoked OR expired.

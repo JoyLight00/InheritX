@@ -52,14 +52,15 @@ pub async fn enforce_max_request_size(req: Request<Body>, next: Next) -> Respons
 
     // Read the body up to the configured cap so we can inspect JSON payloads.
     let (parts, body) = req.into_parts();
-    let bytes: axum::body::Bytes = match axum::body::to_bytes(body, crate::validation::DEFAULT_MAX_BODY_BYTES + 1).await {
-        Ok(b) => b,
-        Err(_) => {
-            // If body couldn't be read, let the inner handler observe the failure.
-            let req = Request::from_parts(parts, Body::empty());
-            return next.run(req).await;
-        }
-    };
+    let bytes: axum::body::Bytes =
+        match axum::body::to_bytes(body, crate::validation::DEFAULT_MAX_BODY_BYTES + 1).await {
+            Ok(b) => b,
+            Err(_) => {
+                // If body couldn't be read, let the inner handler observe the failure.
+                let req = Request::from_parts(parts, Body::empty());
+                return next.run(req).await;
+            }
+        };
 
     if bytes.len() > crate::validation::DEFAULT_MAX_BODY_BYTES {
         return (
@@ -285,7 +286,8 @@ pub async fn request_logging_middleware(mut req: Request, next: Next) -> Respons
 
     let sampling_ratio = log_sampling_ratio();
     let is_high_traffic = is_high_traffic_path(&path);
-    let should_emit_full_details = !is_high_traffic || should_sample_request(&request_id, sampling_ratio);
+    let should_emit_full_details =
+        !is_high_traffic || should_sample_request(&request_id, sampling_ratio);
 
     if should_emit_full_details {
         tracing::info!(
@@ -348,11 +350,7 @@ fn sanitize_header_value(name: &HeaderName, value: &HeaderValue) -> String {
 fn is_high_traffic_path(path: &str) -> bool {
     matches!(
         path,
-        "/api/metrics"
-            |"/api/health"
-            |"/api/ping"
-            |"/api/status"
-            |"/api/loans/lifecycle"
+        "/api/metrics" | "/api/health" | "/api/ping" | "/api/status" | "/api/loans/lifecycle"
     )
 }
 

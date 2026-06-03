@@ -5,9 +5,9 @@
 /// before processing the request body.
 use crate::api_error::ApiError;
 use regex::Regex;
+use serde_json::Value as JsonValue;
 use std::collections::HashMap;
 use std::sync::OnceLock;
-use serde_json::Value as JsonValue;
 
 /// Collects field-level validation errors.
 #[derive(Debug, Default)]
@@ -43,7 +43,9 @@ impl ValidationErrors {
 
 /// Strips leading/trailing whitespace and removes common SQL injection patterns.
 pub fn sanitize_string(input: &str) -> String {
-    sql_injection_pattern().replace_all(input.trim(), "").to_string()
+    sql_injection_pattern()
+        .replace_all(input.trim(), "")
+        .to_string()
 }
 
 fn sql_injection_pattern() -> &'static Regex {
@@ -140,7 +142,9 @@ fn is_valid_unquoted_local_part(local: &str) -> bool {
         | b'&'
         | b'\''
         | b'*'
-        | b'+'        | b'-'        | b'/'
+        | b'+'
+        | b'-'
+        | b'/'
         | b'='
         | b'?'
         | b'^'
@@ -150,8 +154,7 @@ fn is_valid_unquoted_local_part(local: &str) -> bool {
         | b'|'
         | b'}'
         | b'~'
-        | b'.'
-        => true,
+        | b'.' => true,
         _ => false,
     })
 }
@@ -207,7 +210,10 @@ fn is_valid_ipv4(literal: &str) -> bool {
 fn is_valid_ipv6_literal(literal: &str) -> bool {
     literal
         .strip_prefix("IPv6:")
-        .map(|v| v.chars().all(|ch| ch.is_ascii_hexdigit() || ch == ':' || ch == '.'))
+        .map(|v| {
+            v.chars()
+                .all(|ch| ch.is_ascii_hexdigit() || ch == ':' || ch == '.')
+        })
         .unwrap_or(false)
 }
 

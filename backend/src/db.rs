@@ -350,13 +350,14 @@ pub async fn rollback_migration(
     ensure_version_table(pool).await?;
 
     // Verify the target exists and is not already rolled back.
-    let row: Option<(bool,)> = sqlx::query_as(
-        "SELECT rolled_back FROM _migration_versions WHERE version = $1",
-    )
-    .bind(target_version)
-    .fetch_optional(pool)
-    .await
-    .map_err(|e| ApiError::Internal(anyhow::anyhow!("Failed to look up migration: {}", e)))?;
+    let row: Option<(bool,)> =
+        sqlx::query_as("SELECT rolled_back FROM _migration_versions WHERE version = $1")
+            .bind(target_version)
+            .fetch_optional(pool)
+            .await
+            .map_err(|e| {
+                ApiError::Internal(anyhow::anyhow!("Failed to look up migration: {}", e))
+            })?;
 
     match row {
         None => {
@@ -381,31 +382,26 @@ pub async fn rollback_migration(
         .map_err(|e| ApiError::Internal(anyhow::anyhow!("Failed to begin transaction: {}", e)))?;
 
     // Run the caller-supplied down SQL.
-    sqlx::query(down_sql)
-        .execute(&mut *tx)
-        .await
-        .map_err(|e| {
-            ApiError::Internal(anyhow::anyhow!(
-                "Rollback SQL for version {} failed: {}",
-                target_version,
-                e
-            ))
-        })?;
-
-    // Mark as rolled back in our version table.
-    sqlx::query(
-        "UPDATE _migration_versions SET rolled_back = TRUE WHERE version = $1",
-    )
-    .bind(target_version)
-    .execute(&mut *tx)
-    .await
-    .map_err(|e| {
+    sqlx::query(down_sql).execute(&mut *tx).await.map_err(|e| {
         ApiError::Internal(anyhow::anyhow!(
-            "Failed to mark migration {} as rolled back: {}",
+            "Rollback SQL for version {} failed: {}",
             target_version,
             e
         ))
     })?;
+
+    // Mark as rolled back in our version table.
+    sqlx::query("UPDATE _migration_versions SET rolled_back = TRUE WHERE version = $1")
+        .bind(target_version)
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| {
+            ApiError::Internal(anyhow::anyhow!(
+                "Failed to mark migration {} as rolled back: {}",
+                target_version,
+                e
+            ))
+        })?;
 
     // Remove from SQLx's tracking table so it can be re-applied later.
     sqlx::query("DELETE FROM _sqlx_migrations WHERE version = $1")
@@ -427,7 +423,10 @@ pub async fn rollback_migration(
         ))
     })?;
 
-    info!(version = target_version, "Migration rolled back successfully");
+    info!(
+        version = target_version,
+        "Migration rolled back successfully"
+    );
     Ok(())
 }
 

@@ -459,13 +459,12 @@ impl PlanService {
     where
         E: sqlx::Executor<'a, Database = sqlx::Postgres>,
     {
-        let exists: bool = sqlx::query_scalar(
-            "SELECT EXISTS(SELECT 1 FROM plans WHERE id = $1 AND user_id = $2)",
-        )
-        .bind(plan_id)
-        .bind(user_id)
-        .fetch_one(executor)
-        .await?;
+        let exists: bool =
+            sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM plans WHERE id = $1 AND user_id = $2)")
+                .bind(plan_id)
+                .bind(user_id)
+                .fetch_one(executor)
+                .await?;
 
         if !exists {
             return Err(ApiError::NotFound(format!("Plan {plan_id} not found")));
@@ -1600,11 +1599,7 @@ impl RevenueMetricsService {
             "#,
         );
 
-        let rows = rows
-            .bind(trunc)
-            .bind(interval)
-            .fetch_all(pool)
-            .await?;
+        let rows = rows.bind(trunc).bind(interval).fetch_all(pool).await?;
 
         let data = rows
             .into_iter()

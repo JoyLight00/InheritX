@@ -391,13 +391,18 @@ impl LoanLifecycleService {
               AND ($2::uuid IS NULL OR ll.plan_id = $2)
               AND ($3::text IS NULL OR ll.status::text = $3)
             ORDER BY ll.created_at DESC
-            "#
+            "#,
         );
 
         let rows = rows
             .bind(filters.user_id)
             .bind(filters.plan_id)
-            .bind(filters.status.as_ref().map(|status| status.as_str().to_string()))
+            .bind(
+                filters
+                    .status
+                    .as_ref()
+                    .map(|status| status.as_str().to_string()),
+            )
             .fetch_all(db)
             .await?;
         Ok(rows.into_iter().map(Into::into).collect())
@@ -430,7 +435,12 @@ impl LoanLifecycleService {
         let rows = rows
             .bind(filters.user_id)
             .bind(filters.plan_id)
-            .bind(filters.status.as_ref().map(|status| status.as_str().to_string()))
+            .bind(
+                filters
+                    .status
+                    .as_ref()
+                    .map(|status| status.as_str().to_string()),
+            )
             .bind(limit)
             .bind(offset)
             .fetch_all(db)
@@ -447,13 +457,18 @@ impl LoanLifecycleService {
             WHERE ($1::uuid IS NULL OR user_id = $1)
               AND ($2::uuid IS NULL OR plan_id = $2)
               AND ($3::text IS NULL OR status::text = $3)
-            "#
+            "#,
         );
 
         let count = sql
             .bind(filters.user_id)
             .bind(filters.plan_id)
-            .bind(filters.status.as_ref().map(|status| status.as_str().to_string()))
+            .bind(
+                filters
+                    .status
+                    .as_ref()
+                    .map(|status| status.as_str().to_string()),
+            )
             .fetch_one(db)
             .await?;
         Ok(count)
@@ -958,10 +973,10 @@ impl LoanLifecycleService {
         })?;
 
         let current_status = LoanStatus::from_str(&row.status)?;
-        
+
         let new_amount_repaid = row.amount_repaid + amount;
         let fully_repaid = new_amount_repaid >= row.principal;
-        
+
         if fully_repaid {
             let next_status = LoanStatus::PaidOff;
             current_status.validate_transition(next_status)?;
@@ -1159,23 +1174,47 @@ mod tests {
     #[test]
     fn valid_state_transitions_pass() {
         // All valid transitions
-        assert!(LoanStatus::Draft.validate_transition(LoanStatus::Applied).is_ok());
-        assert!(LoanStatus::Applied.validate_transition(LoanStatus::UnderReview).is_ok());
-        assert!(LoanStatus::UnderReview.validate_transition(LoanStatus::Approved).is_ok());
-        assert!(LoanStatus::UnderReview.validate_transition(LoanStatus::Rejected).is_ok());
-        assert!(LoanStatus::Approved.validate_transition(LoanStatus::Active).is_ok());
-        assert!(LoanStatus::Active.validate_transition(LoanStatus::PaidOff).is_ok());
-        assert!(LoanStatus::Active.validate_transition(LoanStatus::Defaulted).is_ok());
+        assert!(LoanStatus::Draft
+            .validate_transition(LoanStatus::Applied)
+            .is_ok());
+        assert!(LoanStatus::Applied
+            .validate_transition(LoanStatus::UnderReview)
+            .is_ok());
+        assert!(LoanStatus::UnderReview
+            .validate_transition(LoanStatus::Approved)
+            .is_ok());
+        assert!(LoanStatus::UnderReview
+            .validate_transition(LoanStatus::Rejected)
+            .is_ok());
+        assert!(LoanStatus::Approved
+            .validate_transition(LoanStatus::Active)
+            .is_ok());
+        assert!(LoanStatus::Active
+            .validate_transition(LoanStatus::PaidOff)
+            .is_ok());
+        assert!(LoanStatus::Active
+            .validate_transition(LoanStatus::Defaulted)
+            .is_ok());
     }
 
     #[test]
     fn invalid_state_transitions_fail() {
         // A few invalid transitions
-        assert!(LoanStatus::Draft.validate_transition(LoanStatus::Active).is_err());
-        assert!(LoanStatus::Applied.validate_transition(LoanStatus::Approved).is_err());
-        assert!(LoanStatus::Approved.validate_transition(LoanStatus::PaidOff).is_err());
-        assert!(LoanStatus::PaidOff.validate_transition(LoanStatus::Active).is_err());
-        assert!(LoanStatus::Rejected.validate_transition(LoanStatus::UnderReview).is_err());
+        assert!(LoanStatus::Draft
+            .validate_transition(LoanStatus::Active)
+            .is_err());
+        assert!(LoanStatus::Applied
+            .validate_transition(LoanStatus::Approved)
+            .is_err());
+        assert!(LoanStatus::Approved
+            .validate_transition(LoanStatus::PaidOff)
+            .is_err());
+        assert!(LoanStatus::PaidOff
+            .validate_transition(LoanStatus::Active)
+            .is_err());
+        assert!(LoanStatus::Rejected
+            .validate_transition(LoanStatus::UnderReview)
+            .is_err());
     }
 
     // ── Partial repayment business logic ─────────────────────────────────────

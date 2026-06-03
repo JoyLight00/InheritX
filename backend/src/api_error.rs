@@ -194,10 +194,7 @@ impl IntoResponse for ApiError {
             }
             Self::Timeout => {
                 tracing::warn!(error_code = "TIMEOUT", "Request timeout");
-                crate::error_tracking::capture_message(
-                    "Request timed out",
-                    sentry::Level::Warning,
-                );
+                crate::error_tracking::capture_message("Request timed out", sentry::Level::Warning);
                 (StatusCode::GATEWAY_TIMEOUT, self.to_string())
             }
             Self::ServiceUnavailable(msg) => {
