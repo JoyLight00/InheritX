@@ -27,6 +27,7 @@ pub mod external_price_fetcher;
 pub mod fitbit_integration;
 pub mod genetic_analysis;
 pub mod governance;
+pub mod gradual_health_decline;
 pub mod graphql;
 pub mod insurance_fund;
 pub mod interest_reconciliation;
@@ -82,6 +83,11 @@ pub use fitbit_integration::{
 pub use genetic_analysis::{
     GeneticAnalysisService, GeneticDatabaseClient, GeneticError, GeneticSimilarityCalculator,
     HealthConditionAnalyzer, PrivacyLevel, ProcessedDNAData, RiskAssessment,
+};
+pub use gradual_health_decline::{
+    GradualHealthDeclineService, HealthBaselineCalculator, HealthDeclineAnalyzer,
+    HealthInterventionAdvisor, HealthTrendPredictor, InheritanceStageManager,
+    MedicalDataIntegrator, QualityOfLifeAssessor,
 };
 pub use governance::GovernanceService;
 pub use interest_reconciliation::InterestReconciliationService;
