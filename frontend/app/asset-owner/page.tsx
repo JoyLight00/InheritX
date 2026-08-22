@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useWallet } from "@/context/WalletContext";
 import { plansAPI, type Plan } from "@/app/lib/api/plans";
+import { getPlans } from "@/lib/api/dataSource";
 import { formatAddress } from "@/util/address";
 import {
   TrendingUp,
@@ -73,12 +74,17 @@ export default function AssetOwnerPage() {
   const { isConnected, address, openModal } = useWallet();
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const mockPlans = require("@/lib/mockStore").mockStore.getPlans();
-    setPlans(mockPlans);
-    setLoading(false);
-  }, [isConnected, address]);
+    let cancelled = false;
+    setLoading(true);
+    getPlans(address ?? undefined)
+      .then((nextPlans) => { if (!cancelled) { setPlans(nextPlans); setError(null); } })
+      .catch((err) => { if (!cancelled) { setPlans([]); setError(err instanceof Error ? err.message : "Failed to load plans."); } })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [address]);
 
   const activePlans = plans.filter((p) => p.status?.toUpperCase() === "ACTIVE");
   const totalYield = plans.reduce((s, p) => s + (p.accrued_yield ?? 0), 0);
@@ -104,6 +110,7 @@ export default function AssetOwnerPage() {
       </div>
 
       {/* Demo Mode Notice */}
+      {error && <div role="alert" className="rounded-2xl border border-red-500/20 bg-red-500/5 p-4 text-xs text-red-300">{error}</div>}
       <div className="rounded-2xl border border-[#33C5E0]/20 bg-[#33C5E0]/5 p-4 flex items-center gap-3">
         <span className="w-2 h-2 rounded-full bg-[#33C5E0] animate-pulse" />
         <p className="text-xs text-[#33C5E0]">

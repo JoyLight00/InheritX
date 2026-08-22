@@ -267,6 +267,7 @@ pub fn create_router(state: Arc<AppState>) -> Router {
     // Public or admin routes
     let public_routes = Router::new()
         .route("/api/plans", get(get_plans))
+        .route("/api/plans/{id}", get(get_plan))
         .route("/api/anchor/payout-status", get(get_anchor_payouts))
         .route("/api/lending/current-rate", get(get_current_lending_rate))
         .route("/api/kyc/webhook", post(kyc_webhook_handler))
@@ -979,6 +980,34 @@ async fn update_plan(
 
 // Handler: Get Plans
 // Contributors: Implement plan retrieval, filtering by owner, and apply on-the-fly yield accumulation
+async fn get_plan(
+    State(state): State<Arc<AppState>>,
+    Path(plan_id): Path<uuid::Uuid>,
+) -> impl IntoResponse {
+    let row = match sqlx::query_as::<_, PlanRow>(
+        r#"
+        SELECT id, owner_address, token_address, amount, grace_period,
+               grace_period_seconds, earn_yield, last_ping, is_active,
+               status, yield_rate_bps, accrued_yield, created_at, onchain_plan_id
+        FROM plans
+        WHERE id = $1
+        "#,
+    )
+    .bind(plan_id)
+    .fetch_optional(&state.db_pool)
+    .await
+    {
+        Ok(Some(row)) => row,
+        Ok(None) => return (StatusCode::NOT_FOUND, Json(serde_json::json!({ "error": "Plan not found" }))).into_response(),
+        Err(error) => return (StatusCode::INTERNAL_SERVER_ERROR, Json(serde_json::json!({ "error": format!("Database query failed: {}", error) }))).into_response(),
+    };
+
+    match load_beneficiaries(&state.db_pool, row.id).await {
+        Ok(beneficiaries) => Json(plan_row_to_response(row, beneficiaries)).into_response(),
+        Err(error) => (StatusCode::INTERNAL_SERVER_ERROR, Json(serde_json::json!({ "error": format!("Failed to load beneficiaries: {}", error) }))).into_response(),
+    }
+}
+
 async fn get_plans(
     State(state): State<Arc<AppState>>,
     Query(query): Query<PlanQuery>,

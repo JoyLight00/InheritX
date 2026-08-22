@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { useWallet } from "@/context/WalletContext";
 import { plansAPI, type Plan } from "@/app/lib/api/plans";
+import { getPlans, useMockData } from "@/lib/api/dataSource";
+import inheritanceAPI from "@/app/lib/api/inheritance";
 import { useInactivityTimer } from "@/app/hooks/useInactivityTimer";
 import { formatAddress } from "@/util/address";
 import { motion, AnimatePresence } from "framer-motion";
@@ -266,14 +268,14 @@ export default function ClaimPlanPage() {
     setSearched(true);
 
     try {
-      const mockStore = require("@/lib/mockStore").mockStore;
-      const query = searchQuery.trim().toLowerCase();
-      // Search matching plan ID, owner address, or beneficiary address
-      const results = mockStore.getPlans().filter((p: any) => 
-        p.id.toLowerCase().includes(query) ||
-        p.owner_address.toLowerCase().includes(query) ||
-        (p.beneficiaries && p.beneficiaries.some((b: any) => b.wallet_address.toLowerCase().includes(query)))
-      );
+      const query = searchQuery.trim();
+      const results = useMockData
+        ? (await getPlans()).filter((p) =>
+            p.id.toLowerCase().includes(query.toLowerCase()) ||
+            p.owner_address?.toLowerCase().includes(query.toLowerCase()) ||
+            p.beneficiaries?.some((b) => b.wallet_address?.toLowerCase().includes(query.toLowerCase()))
+          )
+        : await inheritanceAPI.getPlans({ owner: query });
       setPlans(results || []);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to fetch plans for this address.");
