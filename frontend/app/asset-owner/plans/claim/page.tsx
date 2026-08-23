@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useWallet } from "@/context/WalletContext";
 import { plansAPI, type Plan } from "@/app/lib/api/plans";
 import { getPlans, useMockData } from "@/lib/api/dataSource";
-import inheritanceAPI from "@/app/lib/api/inheritance";
+import inheritanceAPI, { type PlanResponse } from "@/app/lib/api/inheritance";
 import { useInactivityTimer } from "@/app/hooks/useInactivityTimer";
 import { formatAddress } from "@/util/address";
 import { motion, AnimatePresence } from "framer-motion";
@@ -26,6 +26,30 @@ import {
 interface PlanClaimCardProps {
   initialPlan: Plan;
   onSuccess: () => void;
+}
+
+function toClaimPlan(plan: PlanResponse): Plan {
+  const amount = Number(plan.amount);
+
+  return {
+    id: plan.id,
+    user_id: plan.owner_address,
+    owner_address: plan.owner_address,
+    token_address: plan.token_address,
+    amount,
+    title: "Inheritance Plan",
+    fee: 0,
+    net_amount: amount + plan.accrued_yield,
+    status: plan.status,
+    created_at: plan.created_at,
+    updated_at: plan.created_at,
+    contract_plan_id: undefined,
+    beneficiaries: plan.beneficiaries,
+    grace_period_seconds: plan.grace_period_seconds,
+    yield_rate_bps: plan.yield_rate_bps,
+    earn_yield: plan.earn_yield,
+    last_ping: plan.last_ping,
+  };
 }
 
 function PlanClaimCard({ initialPlan, onSuccess }: PlanClaimCardProps) {
@@ -276,7 +300,11 @@ export default function ClaimPlanPage() {
             p.beneficiaries?.some((b) => b.wallet_address?.toLowerCase().includes(query.toLowerCase()))
           )
         : await inheritanceAPI.getPlans({ owner: query });
-      setPlans(results || []);
+      setPlans(
+        (results || []).map((plan) =>
+          "title" in plan ? plan : toClaimPlan(plan)
+        )
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to fetch plans for this address.");
       setPlans([]);

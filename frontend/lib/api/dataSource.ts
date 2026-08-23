@@ -1,5 +1,5 @@
-import { plansAPI, type Plan } from "./plans";
-import { kycAPI, type KYCResponse } from "./kyc";
+import { plansAPI, type Plan } from "../../app/lib/api/plans";
+import { kycAPI, type KYCResponse } from "../../app/lib/api/kyc";
 import { mockStore } from "../mockStore";
 
 export const useMockData = process.env.NEXT_PUBLIC_USE_MOCK_DATA === "true";

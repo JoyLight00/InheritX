@@ -101,7 +101,10 @@ export class PlansAPI {
     const response = await apiClient.get<ApiResponse<Plan> | Plan>(
       `/api/plans/${planId}`
     );
-    return "data" in response ? response.data! : response;
+    if (response && typeof response === "object" && "data" in response) {
+      return response.data!;
+    }
+    return response as Plan;
   }
 
   /**
